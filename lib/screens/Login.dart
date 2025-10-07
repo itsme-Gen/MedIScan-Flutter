@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:medi_scan_mobile/colors.dart';
 import 'package:medi_scan_mobile/widget/bottomNav.dart';
-
+import 'package:medi_scan_mobile/screens/Signup.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -12,11 +12,16 @@ class Login extends StatelessWidget {
   void navigateToDashbord (BuildContext context){
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Bottomnav()));
   }
+
+  void navigateToSignup(BuildContext context){
+    Navigator.push(context, MaterialPageRoute(builder: (context) => const Signup()));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       
-
+      
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -114,8 +119,11 @@ class Login extends StatelessWidget {
                       Text("Don't have an account?",
                         style: TextStyle(color: AppColors.secondary),
                       ),
-                      Text("Sign up hre",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                      GestureDetector(
+                        onTap: () => navigateToSignup(context),
+                        child: Text("Sign up hre",
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
+                        ),
                       )
                     ],
                   ),
