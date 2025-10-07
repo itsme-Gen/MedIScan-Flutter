@@ -194,3 +194,4 @@ class _ScanidState extends State<Scanid> {
     );
   }
 }
+

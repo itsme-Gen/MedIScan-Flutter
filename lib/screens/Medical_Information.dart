@@ -308,7 +308,7 @@ class _MedicalInformationState extends State<MedicalInformation> {
         child: BottomNavigationBar(
           currentIndex: 1,
           onTap: (index) {
-            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const Bottomnav()), (route) => false);
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: index)), (route) => false);
           },
           type: BottomNavigationBarType.fixed,
           selectedItemColor: AppColors.primary,

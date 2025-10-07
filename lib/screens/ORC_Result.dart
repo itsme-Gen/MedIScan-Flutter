@@ -1,4 +1,3 @@
-// Updated ORC_Result.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:medi_scan_mobile/colors.dart';
@@ -20,7 +19,7 @@ class OrcResultWithNav extends StatelessWidget {
           // Navigate back to Scan ID page when back button is pressed
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const Bottomnav()),
+            MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: 1)),
             (route) => false,
           );
         }
@@ -38,7 +37,7 @@ class OrcResultWithNav extends StatelessWidget {
             onTap: (index) {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const Bottomnav()),
+                MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: index)),
                 (route) => false,
               );
             },
@@ -232,7 +231,7 @@ class _OrcResultState extends State<OrcResult> {
                   buildButton("Scan Again", Colors.grey.shade600, () {
                     Navigator.pushAndRemoveUntil(
                       context,
-                      MaterialPageRoute(builder: (context) => const Bottomnav()),
+                      MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: 1)),
                       (route) => false,
                     );
                   }, LucideIcons.refresh_ccw),
