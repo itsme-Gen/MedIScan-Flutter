@@ -36,6 +36,7 @@ class _BottomnavState extends State<Bottomnav> {
           color: Colors.white, // background of nav
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.1), // shadow color
               spreadRadius: 0,
               blurRadius: 6,
