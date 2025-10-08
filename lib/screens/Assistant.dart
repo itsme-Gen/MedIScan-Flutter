@@ -123,28 +123,28 @@ class _AssistantState extends State<Assistant> with AutomaticKeepAliveClientMixi
                   Expanded(
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: EdgeInsets.all(8),
+                      padding: EdgeInsets.all(15),
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
                         final message = _messages[index];
                         return Column(
                           children: [
                             Padding(
-                              padding: EdgeInsets.symmetric(vertical: 4),
+                              padding: EdgeInsets.symmetric(vertical: 8),
                               child: Row(
                                 mainAxisAlignment: message['isUser'] ? MainAxisAlignment.end : MainAxisAlignment.start,
                                 children: [
                                   if (!message['isUser']) ...[
                                     Container(
-                                      padding: EdgeInsets.all(6),
-                                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(16)),
+                                      padding: EdgeInsets.all(10),
+                                      decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)),
                                       child: Icon(LucideIcons.bot, color: Colors.white, size: 14),
                                     ),
                                     SizedBox(width: 6),
                                   ],
                                   Flexible(
                                     child: Container(
-                                      padding: EdgeInsets.all(10),
+                                      padding: EdgeInsets.all(20),
                                       decoration: BoxDecoration(
                                         color: message['isUser'] ? AppColors.primary : Colors.grey.shade100,
                                         borderRadius: BorderRadius.circular(10),
@@ -152,9 +152,9 @@ class _AssistantState extends State<Assistant> with AutomaticKeepAliveClientMixi
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Text(message['text'], style: TextStyle(color: message['isUser'] ? Colors.white : Colors.black, fontSize: 13)),
+                                          Text(message['text'], style: TextStyle(color: message['isUser'] ? Colors.white : Colors.black, fontSize: 15)),
                                           SizedBox(height: 2),
-                                          Text(message['time'], style: TextStyle(color: message['isUser'] ? Colors.white70 : Colors.grey.shade600, fontSize: 9)),
+                                          Text(message['time'], style: TextStyle(color: message['isUser'] ? Colors.white70 : Colors.grey.shade600, fontSize: 15)),
                                         ],
                                       ),
                                     ),
@@ -164,7 +164,7 @@ class _AssistantState extends State<Assistant> with AutomaticKeepAliveClientMixi
                                     Container(
                                       padding: EdgeInsets.all(6),
                                       decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(16)),
-                                      child: Icon(LucideIcons.user, color: Colors.grey.shade600, size: 14),
+                                      child: Icon(LucideIcons.user, color: Colors.grey.shade600, size: 20),
                                     ),
                                   ],
                                 ],
@@ -187,7 +187,7 @@ class _AssistantState extends State<Assistant> with AutomaticKeepAliveClientMixi
                                             borderRadius: BorderRadius.circular(6),
                                             border: Border.all(color: Colors.grey.shade300),
                                           ),
-                                          child: Text("List all patients with diabetes", style: TextStyle(color: Colors.grey.shade700, fontSize: 10)),
+                                          child: Text("List all patients with diabetes", style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
                                         ),
                                       ),
                                     ),
@@ -203,7 +203,7 @@ class _AssistantState extends State<Assistant> with AutomaticKeepAliveClientMixi
                                             borderRadius: BorderRadius.circular(6),
                                             border: Border.all(color: Colors.grey.shade300),
                                           ),
-                                          child: Text("Show recent emergency visits", style: TextStyle(color: Colors.grey.shade700, fontSize: 10)),
+                                          child: Text("Show recent emergency visits", style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
                                         ),
                                       ),
                                     ),
