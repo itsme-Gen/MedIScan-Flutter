@@ -7,14 +7,15 @@ import 'package:medi_scan_mobile/screens/ScanID.dart';
 import 'package:medi_scan_mobile/screens/Search.dart';
 
 class Bottomnav extends StatefulWidget {
-  const Bottomnav({super.key});
+  final int initialIndex;
+  const Bottomnav({super.key, this.initialIndex = 0});
 
   @override
   State<Bottomnav> createState() => _BottomnavState();
 }
 
 class _BottomnavState extends State<Bottomnav> {
-  int currentIndex = 0;
+  late int currentIndex;
 
   final List<Widget> screens = const [
     Dashboard(),
@@ -24,18 +25,25 @@ class _BottomnavState extends State<Bottomnav> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    currentIndex = widget.initialIndex;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: screens[currentIndex],
       ),
-
+      
       // ✅ Wrap BottomNavigationBar inside a Container with BoxShadow
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white, // background of nav
           boxShadow: [
             BoxShadow(
+              // ignore: deprecated_member_use
               color: Colors.black.withOpacity(0.1), // shadow color
               spreadRadius: 0,
               blurRadius: 6,
