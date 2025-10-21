@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
+import 'package:medi_scan_mobile/api/register.dart';
 import 'package:medi_scan_mobile/colors.dart';
 
 class Signup extends StatefulWidget {
@@ -11,13 +12,107 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
+  final RegisterService _registerService = RegisterService();
+  
+  // Controllers for form fields
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _middleNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _departmentController = TextEditingController();
+  final TextEditingController _licenseNumberController = TextEditingController();
+  final TextEditingController _hospitalIdController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  
   String selectedRole = 'Select Role';
+  String selectedGender = 'Male';
+  bool _isLoading = false;
+  
   final List<String> roles = ['Select Role', 'Doctor', 'Nurse', 'Medical Technician', 'Pharmacist', 'Administrator'];
+  final List<String> genders = ['Male', 'Female', 'Other'];
 
-  Widget buildTextField(String hint, {bool isEmail = false, bool allowSpaces = false}) {
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _middleNameController.dispose();
+    _lastNameController.dispose();
+    _departmentController.dispose();
+    _licenseNumberController.dispose();
+    _hospitalIdController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    // Validation
+    if (_firstNameController.text.isEmpty ||
+        _lastNameController.text.isEmpty ||
+        selectedRole == 'Select Role' ||
+        _departmentController.text.isEmpty ||
+        _licenseNumberController.text.isEmpty ||
+        _hospitalIdController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please fill in all required fields')),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _registerService.registerUser(
+        firstName: _firstNameController.text.trim(),
+        middleName: _middleNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        gender: selectedGender,
+        role: selectedRole,
+        department: _departmentController.text.trim(),
+        licenseNumber: int.parse(_licenseNumberController.text.trim()),
+        hospitalId: int.parse(_hospitalIdController.text.trim()),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (result['status'] == 200 || result['status'] == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Account created successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['body']['message'] ?? 'Registration failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Widget buildTextField(String hint, TextEditingController controller, {bool isEmail = false, bool allowSpaces = false, bool isNumber = false}) {
     return TextField(
-      keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
-      inputFormatters: allowSpaces ? [] : [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+      controller: controller,
+      keyboardType: isEmail ? TextInputType.emailAddress : (isNumber ? TextInputType.number : TextInputType.text),
+      inputFormatters: [
+        if (!allowSpaces) FilteringTextInputFormatter.deny(RegExp(r'\s')),
+        if (isNumber) FilteringTextInputFormatter.digitsOnly,
+      ],
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(fontSize: 11),
@@ -29,8 +124,9 @@ class _SignupState extends State<Signup> {
     );
   }
 
-  Widget buildPasswordField(String hint) {
+  Widget buildPasswordField(String hint, TextEditingController controller) {
     return TextField(
+      controller: controller,
       obscureText: true,
       inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
       decoration: InputDecoration(
@@ -78,16 +174,31 @@ class _SignupState extends State<Signup> {
               
               Row(
                 children: [
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('First Name'), SizedBox(height: 4), buildTextField('First name', allowSpaces: true)])),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('First Name'), SizedBox(height: 4), buildTextField('First name', _firstNameController, allowSpaces: true)])),
                   SizedBox(width: 10),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('Middle Name'), SizedBox(height: 4), buildTextField('Middle name', allowSpaces: true)])),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('Middle Name'), SizedBox(height: 4), buildTextField('Middle name', _middleNameController, allowSpaces: true)])),
                 ],
               ),
 
               SizedBox(height: 14),
               buildLabel('Last Name'),
               SizedBox(height: 4),
-              buildTextField('Last name', allowSpaces: true),
+              buildTextField('Last name', _lastNameController, allowSpaces: true),
+
+              SizedBox(height: 14),
+              buildLabel('Gender'),
+              SizedBox(height: 4),
+              DropdownButtonFormField<String>(
+                value: selectedGender,
+                isExpanded: true,
+                style: TextStyle(fontSize: 11, color: Colors.black),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                ),
+                items: genders.map((gender) => DropdownMenuItem(value: gender, child: Text(gender, style: TextStyle(fontSize: 11)))).toList(),
+                onChanged: (newValue) => setState(() => selectedGender = newValue!),
+              ),
 
               SizedBox(height: 14),
               Row(
@@ -99,7 +210,7 @@ class _SignupState extends State<Signup> {
                         buildLabel('Role'),
                         SizedBox(height: 4),
                         DropdownButtonFormField<String>(
-                          initialValue: selectedRole,
+                          value: selectedRole,
                           isExpanded: true,
                           style: TextStyle(fontSize: 11, color: Colors.black),
                           decoration: InputDecoration(
@@ -113,46 +224,48 @@ class _SignupState extends State<Signup> {
                     ),
                   ),
                   SizedBox(width: 10),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('Department'), SizedBox(height: 4), buildTextField('Department', allowSpaces: true)])),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('Department'), SizedBox(height: 4), buildTextField('Department', _departmentController, allowSpaces: true)])),
                 ],
               ),
 
               SizedBox(height: 14),
               Row(
                 children: [
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('License Number'), SizedBox(height: 4), buildTextField('Professional license number', allowSpaces: true)])),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('License Number'), SizedBox(height: 4), buildTextField('Professional license number', _licenseNumberController, isNumber: true)])),
                   SizedBox(width: 10),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('Hospital ID'), SizedBox(height: 4), buildTextField('Employee/Hospital ID', allowSpaces: true)])),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [buildLabel('Hospital ID'), SizedBox(height: 4), buildTextField('Employee/Hospital ID', _hospitalIdController, isNumber: true)])),
                 ],
               ),
 
               SizedBox(height: 14),
               buildLabel('Email'),
               SizedBox(height: 4),
-              buildTextField('Professional email', isEmail: true),
+              buildTextField('Professional email', _emailController, isEmail: true),
 
               SizedBox(height: 14),
               buildLabel('Password'),
               SizedBox(height: 4),
-              buildPasswordField('Create password'),
+              buildPasswordField('Create password', _passwordController),
 
               SizedBox(height: 14),
               buildLabel('Confirm password'),
               SizedBox(height: 4),
-              buildPasswordField('Confirm password'),
+              buildPasswordField('Confirm password', _confirmPasswordController),
 
               SizedBox(height: 60),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _isLoading ? null : _handleRegister,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     padding: EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: Text('Create Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  child: _isLoading 
+                    ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : Text('Create Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -162,4 +275,3 @@ class _SignupState extends State<Signup> {
     );
   }
 }
-
