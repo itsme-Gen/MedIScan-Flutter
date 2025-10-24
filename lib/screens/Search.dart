@@ -100,7 +100,7 @@ class _SearchState extends State<Search> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: reusableAppBar("Search", LucideIcons.search),
+      appBar: reusableAppBar("Search", LucideIcons.search,context),
       backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),

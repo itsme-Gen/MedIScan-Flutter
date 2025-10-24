@@ -72,7 +72,7 @@ class _AssistantState extends State<Assistant> with AutomaticKeepAliveClientMixi
     super.build(context);
     
     return Scaffold(
-      appBar: reusableAppBar("Assistant", LucideIcons.bot),
+      appBar: reusableAppBar("Assistant", LucideIcons.bot,context),
       backgroundColor: Colors.grey.shade50,
       body: Column(
         children: [
