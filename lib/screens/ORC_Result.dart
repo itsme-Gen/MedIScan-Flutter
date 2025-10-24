@@ -7,7 +7,7 @@ import 'package:medi_scan_mobile/widget/bottomNav.dart';
 
 class OrcResultWithNav extends StatelessWidget {
   final File? imageFile;
-  final Map<String, dynamic>? result; // 👈 result from OCR API
+  final Map<String, dynamic>? result;
   final double? confidence;
 
   const OrcResultWithNav({
@@ -33,7 +33,7 @@ class OrcResultWithNav extends StatelessWidget {
       child: Scaffold(
         body: OrcResult(
           imageFile: imageFile,
-          ocrResult: result, // 👈 Pass the extracted OCR data here
+          ocrResult: result,
         ),
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
@@ -79,7 +79,7 @@ class OrcResultWithNav extends StatelessWidget {
 
 class OrcResult extends StatefulWidget {
   final File? imageFile;
-  final Map<String, dynamic>? ocrResult; // 👈 Add OCR result map
+  final Map<String, dynamic>? ocrResult;
 
   const OrcResult({super.key, this.imageFile, this.ocrResult});
 
@@ -89,12 +89,12 @@ class OrcResult extends StatefulWidget {
 
 class _OrcResultState extends State<OrcResult> {
   late Map<String, String> extractedData;
+  bool isEditing = false;
 
   @override
   void initState() {
     super.initState();
 
-    // 👇 Initialize extractedData from OCR result or fallback empty values
     final ocr = widget.ocrResult ?? {};
 
     extractedData = {
@@ -102,7 +102,7 @@ class _OrcResultState extends State<OrcResult> {
       "Middle Name": ocr["middle_name"] ?? "",
       "Last Name": ocr["last_name"] ?? "",
       "ID Number": ocr["id_number"] ?? "",
-      "Birth Date": ocr["birth_date"] ?? "",
+      "Birth Date": ocr["date_of_birth"] ?? "",
       "Gender": ocr["gender"] ?? "",
     };
   }
@@ -156,16 +156,77 @@ class _OrcResultState extends State<OrcResult> {
         TextField(
           controller: controller,
           style: TextStyle(fontSize: 14),
+          readOnly: !isEditing,
           onChanged: (newValue) {
-            extractedData[label] = newValue; // 🔁 Keep map updated
+            extractedData[label] = newValue;
           },
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
             contentPadding:
                 EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: isEditing ? Colors.white : Colors.grey.shade100,
           ),
+        ),
+        SizedBox(height: 16),
+      ],
+    );
+  }
+
+  // 👇 New: Gender dropdown selector
+  Widget buildGenderSelector(String label, String value, IconData icon) {
+    // Check if the value matches one of the dropdown options
+    String? normalizedValue;
+    if (value.isNotEmpty) {
+      String lowerValue = value.toLowerCase();
+      if (lowerValue.contains('male') && !lowerValue.contains('female')) {
+        normalizedValue = "Male";
+      } else if (lowerValue.contains('female')) {
+        normalizedValue = "Female";
+      } else if (["Male", "Female",].contains(value)) {
+        normalizedValue = value;
+      }
+    }
+
+    String hintText = (value.isNotEmpty && normalizedValue == null) 
+        ? value 
+        : "Select gender";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Icon(icon, size: 16, color: Colors.grey.shade600),
+          SizedBox(width: 8),
+          Text(label,
+              style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+        ]),
+        SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: normalizedValue,
+          isExpanded: true,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            filled: true,
+            fillColor: isEditing ? Colors.white : Colors.grey.shade100,
+          ),
+          hint: Text(hintText, style: TextStyle(fontSize: 14, color: Colors.black87)),
+          style: TextStyle(fontSize: 14, color: Colors.black),
+          items: ["Male", "Female",].map((String gender) {
+            return DropdownMenuItem<String>(
+              value: gender,
+              child: Text(gender),
+            );
+          }).toList(),
+          onChanged: isEditing
+              ? (String? newValue) {
+                  setState(() {
+                    extractedData["Gender"] = newValue ?? "";
+                  });
+                }
+              : null,
         ),
         SizedBox(height: 16),
       ],
@@ -239,7 +300,6 @@ class _OrcResultState extends State<OrcResult> {
               ),
             ),
 
-            // Image preview and confidence
             buildCard(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -284,24 +344,67 @@ class _OrcResultState extends State<OrcResult> {
               ],
             )),
 
-            // Extracted Information
             buildCard(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Extracted Information",
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                SizedBox(height: 8),
-                Text("Verify the accuracy of the extracted data",
-                    style:
-                        TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Extracted Information",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        SizedBox(height: 4),
+                        Text("Verify the accuracy of the extracted data",
+                            style: TextStyle(
+                                color: Colors.grey.shade600, fontSize: 12)),
+                      ],
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          if (isEditing) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Changes saved successfully'),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                          isEditing = !isEditing;
+                        });
+                      },
+                      icon:Icon(isEditing ? LucideIcons.save : Icons.edit, size: 16),
+                      label: Text(isEditing ? "Save" : "Edit"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isEditing
+                            ? AppColors.secondary
+                            : AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
                 SizedBox(height: 20),
-                ...extractedData.entries.map(
-                    (e) => buildTextField(e.key, e.value, getIconForField(e.key))),
+                ...extractedData.entries.map((e) {
+                  if (e.key == "Gender") {
+                    return buildGenderSelector(
+                        e.key, e.value, getIconForField(e.key));
+                  } else {
+                    return buildTextField(
+                        e.key, e.value, getIconForField(e.key));
+                  }
+                }),
               ],
             )),
 
-            // Action Buttons
             Padding(
               padding: EdgeInsets.all(16),
               child: Column(
