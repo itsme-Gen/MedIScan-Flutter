@@ -2,323 +2,457 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:medi_scan_mobile/colors.dart';
 import 'package:medi_scan_mobile/widget/bottomNav.dart';
+import 'package:medi_scan_mobile/widget/appBar.dart';
+
+class MedicalData {
+  static final Map<String, TextEditingController> _controllers = {};
+  DateTime? dateStarted;
+  List<String> currentMedicationsList = [];
+  
+  String selectedConditionType = 'Condition Type';
+  String selectedSeverity = 'Severity';
+  String selectedConditionStatus = 'Condition Status';
+  String selectedAllergySeverity = 'Severity';
+  String selectedFlag = 'Flag';
+  DateTime? diagnoseDate, revolutionDate, testDate, dateGiven, nextDue, dateOfPrescribe;
+  List<String> medicalHistory = [];
+  List<String> allergiesList = [];
+  List<String> labResultsList = [];
+  List<String> immunizationsList = [];
+  List<String> prescriptionsList = [];
+
+  static TextEditingController getController(String key) => _controllers.putIfAbsent(key, () => TextEditingController());
+  static void resetAll() => _controllers.values.forEach((c) => c.clear());
+}
 
 class MedicalInformation extends StatefulWidget {
   final Map<String, String> patientData;
-  const MedicalInformation({super.key, required this.patientData});
+  final MedicalData? sharedData;
+  const MedicalInformation({super.key, required this.patientData, this.sharedData});
 
   @override
   State<MedicalInformation> createState() => _MedicalInformationState();
 }
 
 class _MedicalInformationState extends State<MedicalInformation> {
-  // Controllers
-  final controllers = {
-    'condition': TextEditingController(),
-    'vaccine': TextEditingController(),
-    'medication': TextEditingController(),
-    'dosage': TextEditingController(),
-    'frequency': TextEditingController(),
-    'prescribe': TextEditingController(),
-    'test': TextEditingController(),
-    'labFrequency': TextEditingController(),
-    'remarks': TextEditingController(),
-  };
-  
-  // State
-  String selectedStatus = 'Select Status';
-  DateTime? conditionDate, firstDoseDate, secondDoseDate, labDate;
-  List<Map<String, String>> medicalHistory = [], vaccinations = [], medications = [], labResults = [];
+  late MedicalData data;
+  int currentPage = 0; 
 
-  Widget buildCard(String title, String subtitle, Widget child) => Container(
-    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    width: double.infinity,
+  final conditionTypes = ['Condition Type', 'N/A', 'Chronic', 'Acute', 'Infectious', 'General', 'Mental Health', 'Auto immune', 'Cancer', 'Cardiovascular', 'Respiratory', 'Neurological', 'Pregnancy Complication', 'Congenital', 'Substance Abuse'];
+  final severityOptions = ['Severity', 'Mild', 'Moderate', 'Severe'];
+  final conditionStatusOptions = ['Condition Status', 'Active', 'Progressive', 'Resolved'];
+  final flagOptions = ['Flag', 'Normal', 'High', 'Low'];
+
+  @override
+  void initState() {
+    super.initState();
+    data = widget.sharedData ?? MedicalData();
+  }
+
+  Widget _card(String title, String subtitle, Widget child, IconData icon) => Container(
+    margin: EdgeInsets.all(16),
     padding: EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(8),
       border: Border.all(color: Colors.grey.shade200),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Row(children: [
+          Icon(icon, color: AppColors.primary, size: 18),
+          SizedBox(width: 8),
+          Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.primary)),
+        ]),
         if (subtitle.isNotEmpty) Text(subtitle, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-        SizedBox(height: 16),
+        SizedBox(height: 12),
         child,
       ],
     ),
   );
 
-  Widget buildInput(String hint, String key, {int maxLines = 1}) => TextField(
-    controller: controllers[key],
-    maxLines: maxLines,
-    decoration: InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: maxLines > 1 ? Colors.grey.shade500 : null),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      contentPadding: EdgeInsets.all(maxLines > 1 ? 16 : 12),
-    ),
-    style: TextStyle(fontSize: 14),
+  Widget _input(String label, String key, {String hint = '', int maxLines = 1}) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      SizedBox(height: 4),
+      TextField(
+        controller: MedicalData.getController(key),
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: TextStyle(fontSize: 10),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          contentPadding: EdgeInsets.all(12),
+        ),
+        style: TextStyle(fontSize: 10),
+      ),
+      SizedBox(height: 20),
+    ],
   );
 
-  Widget buildDatePicker(String hint, DateTime? date, Function(DateTime) onSelect) => 
-    GestureDetector(
-      onTap: () async {
-        final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime.now());
-        if (picked != null) onSelect(picked);
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
-        child: Row(
-          children: [
+  Widget _date(String label, DateTime? date, Function(DateTime) onSelect) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      SizedBox(height: 4),
+      GestureDetector(
+        onTap: () async {
+          final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(1900), lastDate: DateTime.now());
+          if (picked != null) onSelect(picked);
+        },
+        child: Container(
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(8)),
+          child: Row(children: [
+            Expanded(child: Text(date?.toLocal().toString().split(' ')[0] ?? 'dd/mm/yyyy', style: TextStyle(fontSize: 10, color: date != null ? Colors.black : Colors.grey.shade600))),
             Icon(LucideIcons.calendar, size: 16, color: Colors.grey),
-            SizedBox(width: 8),
-            Text(date?.toLocal().toString().split(' ')[0] ?? hint, style: TextStyle(color: date != null ? Colors.black : Colors.grey.shade600)),
-          ],
+          ]),
         ),
       ),
-    );
-
-  Widget buildDropdown() => DropdownButtonFormField<String>(
-    initialValue: selectedStatus,
-    decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
-    items: ['Select Status', 'Active', 'Inactive', 'Chronic'].map((status) => DropdownMenuItem(value: status, child: Text(status, style: TextStyle(fontSize: 12),))).toList(),
-    onChanged: (value) => setState(() => selectedStatus = value!),
+      SizedBox(height: 20),
+    ],
   );
 
-  Widget buildSavedItem(List<Map<String, String>> list, int index) => Container(
-    margin: EdgeInsets.only(top: 8),
-    padding: EdgeInsets.all(12),
-    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
-    child: Row(
+  Widget _dropdown(String label, String currentValue, List<String> options, Function(String?) onChanged) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      SizedBox(height: 4),
+      DropdownButtonFormField<String>(
+        value: currentValue,
+        decoration: InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), contentPadding: EdgeInsets.all(12)),
+        isExpanded: true,
+        style: TextStyle(fontSize: 10, color: Colors.black),
+        items: options.map((option) => DropdownMenuItem(value: option, child: Text(option, style: TextStyle(fontSize: 10)))).toList(),
+        onChanged: onChanged,
+      ),
+      SizedBox(height: 20),
+    ],
+  );
+
+  Widget _patientInfo(String label, String value) => Padding(
+    padding: EdgeInsets.only(bottom: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: RichText(
-          text: TextSpan(
-            children: list[index]['display']!.split('\n').expand((line) {
-              if (line.contains(':')) {
-                var parts = line.split(':');
-                return [
-                  TextSpan(text: '${parts[0]}:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black)),
-                  TextSpan(text: parts.length > 1 ? parts[1] : '', style: TextStyle(fontSize: 13, color: Colors.black)),
-                  TextSpan(text: '\n')
-                ];
-              }
-              return [TextSpan(text: '$line\n', style: TextStyle(fontSize: 13, color: Colors.black))];
-            }).toList()..removeLast(),
-          ),
-        )),
-        IconButton(icon: Icon(LucideIcons.trash_2, color: Colors.red, size: 16), onPressed: () => setState(() => list.removeAt(index))),
+        Text('$label:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        Text(value, style: TextStyle(fontSize: 12)),
       ],
     ),
   );
 
-  Widget buildButton(String text, VoidCallback onPressed) => SizedBox(
-    width: double.infinity,
-    child: ElevatedButton(onPressed: onPressed, style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white), child: Text(text)),
+  Widget _listItem(String text, int index, List<String> list) => Container(
+    margin: EdgeInsets.only(top: 12),
+    padding: EdgeInsets.all(12),
+    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+    child: Row(children: [
+      Expanded(child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: text.split('\n').map((line) {
+          if (line.contains(':')) {
+            final parts = line.split(':');
+            return RichText(text: TextSpan(
+              style: TextStyle(fontSize: 12, color: Colors.black),
+              children: [
+                TextSpan(text: '${parts[0].trim()}: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                TextSpan(text: parts.length > 1 ? parts[1].trim() : ''),
+              ],
+            ));
+          }
+          return Text(line, style: TextStyle(fontSize: 12, color: Colors.black));
+        }).toList(),
+      )),
+      IconButton(icon: Icon(LucideIcons.trash_2, color: Colors.red, size: 16), onPressed: () => setState(() => list.removeAt(index))),
+    ]),
   );
 
-  void addData(List<Map<String, String>> list, String display, List<String> clearKeys, {bool resetDate = false, bool resetStatus = false}) {
-    setState(() {
-      list.add({'display': display});
-      for (String key in clearKeys) {
-        controllers[key]!.clear();
-      }
-      if (resetDate) conditionDate = firstDoseDate = secondDoseDate = labDate = null;
-      if (resetStatus) selectedStatus = 'Select Status';
-    });
+  Widget _medicationItem(int index) {
+    final lines = data.currentMedicationsList[index].split('\n');
+    return Container(
+      margin: EdgeInsets.only(top: 12),
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.grey.shade200)),
+      child: Row(children: [
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: lines.map((line) {
+            if (line.contains(':')) {
+              final parts = line.split(':');
+              return RichText(text: TextSpan(
+                style: TextStyle(fontSize: 12, color: Colors.black),
+                children: [
+                  TextSpan(text: '${parts[0].trim()}: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextSpan(text: parts.length > 1 ? parts[1].trim() : ''),
+                ],
+              ));
+            }
+            return Text(line, style: TextStyle(fontSize: 12, color: Colors.black));
+          }).toList(),
+        )),
+        IconButton(icon: Icon(LucideIcons.trash_2, color: Colors.red, size: 16), onPressed: () => setState(() => data.currentMedicationsList.removeAt(index))),
+      ]),
+    );
+  }
+
+  Widget _addButton(String text, VoidCallback onPressed) => SizedBox(
+    width: double.infinity,
+    child: ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+      child: Text(text, style: TextStyle(fontSize: 14)),
+    ),
+  );
+
+  void _addMedication() {
+    final name = MedicalData.getController('medicationName').text;
+    final dosage = MedicalData.getController('dosage').text;
+    final frequency = MedicalData.getController('frequency').text;
+    
+    if (name.isNotEmpty && data.dateStarted != null && dosage.isNotEmpty && frequency.isNotEmpty) {
+      setState(() {
+        data.currentMedicationsList.add('Medication Name: $name\nDate Started: ${data.dateStarted!.toLocal().toString().split(' ')[0]}\nDosage: $dosage\nFrequency: $frequency');
+        for (var key in ['medicationName', 'dosage', 'frequency']) {
+          MedicalData.getController(key).clear();
+        }
+        data.dateStarted = null;
+      });
+    }
+  }
+
+  void _addToList(List<String> list, String Function() buildEntry, List<String> requiredFields, List<dynamic> requiredValues) {
+    bool allValid = requiredFields.every((field) => MedicalData.getController(field).text.isNotEmpty) && requiredValues.every((value) => value != null);
+    if (allValid) {
+      setState(() {
+        list.add(buildEntry());
+        for (var field in requiredFields) {
+          MedicalData.getController(field).clear();
+        }
+        _resetDropdowns();
+      });
+    }
+  }
+
+  void _resetDropdowns() {
+    data.selectedConditionType = 'Condition Type';
+    data.selectedSeverity = 'Severity';
+    data.selectedConditionStatus = 'Condition Status';
+    data.selectedAllergySeverity = 'Severity';
+    data.selectedFlag = 'Flag';
+    data.diagnoseDate = data.revolutionDate = data.testDate = data.dateGiven = data.nextDue = data.dateOfPrescribe = null;
+  }
+
+  // Part 1 Content
+  Widget _buildPart1() {
+    return Column(children: [
+      _card("Patient Information", "", Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _patientInfo('Full Name', widget.patientData["Full Name"] ?? ''),
+        _patientInfo('Birth Date', widget.patientData["Birth Date"] ?? ''),
+        _patientInfo('Gender', widget.patientData["Gender"] ?? ''),
+        _patientInfo('ID Number', widget.patientData["ID Number"] ?? ''),
+      ]), LucideIcons.user),
+
+      _card("Contact Information", "Type N/A if not applicable", Column(children: [
+        _input("Email Address", 'email', hint: "e.g. juan@gmail.com"),
+        _input("Home Address", 'homeAddress', hint: "e.g. 123 Mabini ST., Quezon City"),
+        _input("Contact Number", 'contactNumber', hint: "+639 xxx xxx xxx"),
+        _input("Emergency Contact Number", 'emergencyContact', hint: "+639 xxx xxx xxx"),
+      ]), LucideIcons.phone),
+
+      _card("Reason for Visit", "", Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TextField(
+          controller: MedicalData.getController('reasonForVisit'),
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: "Type something here...",
+            hintStyle: TextStyle(fontSize: 10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            contentPadding: EdgeInsets.all(12),
+          ),
+          style: TextStyle(fontSize: 10),
+        ),
+        SizedBox(height: 20),
+      ]), LucideIcons.stethoscope),
+
+      _card("Vital Signs", "All fields are required", Column(children: [
+        Row(children: [
+          Expanded(child: _input("Body Temperature", 'bodyTemp', hint: "36.5°C – 37.5°C")),
+          SizedBox(width: 16),
+          Expanded(child: _input("Heart Pulse", 'heartPulse', hint: "60 - 100 bpm")),
+        ]),
+        Row(children: [
+          Expanded(child: _input("Respiratory Rate", 'respiratoryRate', hint: "12 - 20 breaths/min")),
+          SizedBox(width: 16),
+          Expanded(child: _input("Blood Pressure", 'bloodPressure', hint: "120/80 mmHg")),
+        ]),
+      ]), LucideIcons.activity),
+    ]);
+  }
+
+  // Part 2 Content
+  Widget _buildPart2() {
+    return Column(children: [
+      _card("Patient Information", "", Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _patientInfo('Full Name', widget.patientData["Full Name"] ?? ''),
+        _patientInfo('Birth Date', widget.patientData["Birth Date"] ?? ''),
+        _patientInfo('Gender', widget.patientData["Gender"] ?? ''),
+        _patientInfo('ID Number', widget.patientData["ID Number"] ?? ''),
+      ]), LucideIcons.user),
+
+      _card("Current Medication", "Type N/A if not applicable", Column(children: [
+        Row(children: [
+          Expanded(child: _input("Medication Name", 'medicationName', hint: "Medication Name")),
+          SizedBox(width: 16),
+          Expanded(child: _date("Date Started", data.dateStarted, (date) => setState(() => data.dateStarted = date))),
+        ]),
+        Row(children: [
+          Expanded(child: _input("Dosage", 'dosage', hint: "Dosage")),
+          SizedBox(width: 16),
+          Expanded(child: _input("Frequency", 'frequency', hint: "Frequency")),
+        ]),
+        _addButton("Add", _addMedication),
+        ...data.currentMedicationsList.asMap().entries.map((e) => _medicationItem(e.key)),
+      ]), LucideIcons.pill),
+
+      _card("Medical History", "Type N/A if not applicable", Column(children: [
+        Row(children: [
+          Expanded(child: _input("Condition Name", 'conditionName', hint: "Condition Name")),
+          SizedBox(width: 16),
+          Expanded(child: _date("Diagnose Date", data.diagnoseDate, (date) => setState(() => data.diagnoseDate = date))),
+        ]),
+        Row(children: [
+          Expanded(child: _dropdown("Condition Type", data.selectedConditionType, conditionTypes, (value) => setState(() => data.selectedConditionType = value!))),
+          SizedBox(width: 16),
+          Expanded(child: _dropdown("Severity", data.selectedSeverity, severityOptions, (value) => setState(() => data.selectedSeverity = value!))),
+        ]),
+        Row(children: [
+          Expanded(child: _dropdown("Condition Status", data.selectedConditionStatus, conditionStatusOptions, (value) => setState(() => data.selectedConditionStatus = value!))),
+          SizedBox(width: 16),
+          Expanded(child: _date("Resolution Date", data.revolutionDate, (date) => setState(() => data.revolutionDate = date))),
+        ]),
+        _addButton("Add", () => _addToList(data.medicalHistory, () => 'Condition Name: ${MedicalData.getController('conditionName').text}\nDiagnose Date: ${data.diagnoseDate!.toLocal().toString().split(' ')[0]}\nCondition Type: ${data.selectedConditionType}\nSeverity: ${data.selectedSeverity}\nCondition Status: ${data.selectedConditionStatus}${data.revolutionDate != null ? '\nResolution Date: ${data.revolutionDate!.toLocal().toString().split(' ')[0]}' : ''}', ['conditionName'], [data.diagnoseDate, data.selectedConditionType != 'Condition Type', data.selectedSeverity != 'Severity', data.selectedConditionStatus != 'Condition Status'])),
+        ...data.medicalHistory.asMap().entries.map((e) => _listItem(e.value, e.key, data.medicalHistory)),
+      ]), LucideIcons.heart),
+
+      _card("Allergies", "Type N/A if not applicable", Column(children: [
+        Row(children: [
+          Expanded(child: _input("Allergy Name", 'allergyName', hint: "e.g seafood allergy")),
+          SizedBox(width: 16),
+          Expanded(child: _input("Allergy Type", 'allergyType', hint: "e.g Food, Medication etc.")),
+        ]),
+        Row(children: [
+          Expanded(child: _input("Allergy Reaction", 'allergyReaction', hint: "e.g Difficulty breathing")),
+          SizedBox(width: 16),
+          Expanded(child: _dropdown("Severity", data.selectedAllergySeverity, severityOptions, (value) => setState(() => data.selectedAllergySeverity = value!))),
+        ]),
+        _addButton("Add", () => _addToList(data.allergiesList, () => 'Allergy Name: ${MedicalData.getController('allergyName').text}\nAllergy Type: ${MedicalData.getController('allergyType').text}\nAllergy Reaction: ${MedicalData.getController('allergyReaction').text}\nSeverity: ${data.selectedAllergySeverity}', ['allergyName', 'allergyType', 'allergyReaction'], [data.selectedAllergySeverity != 'Severity'])),
+        ...data.allergiesList.asMap().entries.map((e) => _listItem(e.value, e.key, data.allergiesList)),
+      ]), LucideIcons.dna),
+
+      _card("Lab Result", "Type N/A if not applicable", Column(children: [
+        _input("Test Name", 'testName', hint: "Test Name"),
+        Row(children: [
+          Expanded(child: _date("Date of Test", data.testDate, (date) => setState(() => data.testDate = date))),
+          SizedBox(width: 16),
+          Expanded(child: _input("Test Result", 'testResult', hint: "Test Result")),
+        ]),
+        Row(children: [
+          Expanded(child: _input("Reference Range", 'referenceRange', hint: "e.g 40-60")),
+          SizedBox(width: 16),
+          Expanded(child: _dropdown("Flag", data.selectedFlag, flagOptions, (value) => setState(() => data.selectedFlag = value!))),
+        ]),
+        _addButton("Add", () => _addToList(data.labResultsList, () => 'Test Name: ${MedicalData.getController('testName').text}\nDate of Test: ${data.testDate!.toLocal().toString().split(' ')[0]}\nTest Result: ${MedicalData.getController('testResult').text}\nReference Range: ${MedicalData.getController('referenceRange').text}\nFlag: ${data.selectedFlag}', ['testName', 'testResult', 'referenceRange'], [data.testDate, data.selectedFlag != 'Flag'])),
+        ...data.labResultsList.asMap().entries.map((e) => _listItem(e.value, e.key, data.labResultsList)),
+      ]), LucideIcons.dna),
+
+      _card("Prescription", "Type N/A if not applicable", Column(children: [
+        _input("Medication Name", 'prescriptionMedicationName', hint: "Medication Name"),
+        Row(children: [
+          Expanded(child: _input("Dosage", 'prescriptionDosage', hint: "Dosage")),
+          SizedBox(width: 16),
+          Expanded(child: _input("Quantity", 'quantity', hint: "Quantity")),
+        ]),
+        Row(children: [
+          Expanded(child: _date("Date of Prescribe", data.dateOfPrescribe, (date) => setState(() => data.dateOfPrescribe = date))),
+          SizedBox(width: 16),
+          Expanded(child: _input("Prescribe By", 'prescribeBy', hint: "Name of Provider")),
+        ]),
+        _addButton("Add", () => _addToList(data.prescriptionsList, () => 'Medication Name: ${MedicalData.getController('prescriptionMedicationName').text}\nDosage: ${MedicalData.getController('prescriptionDosage').text}\nQuantity: ${MedicalData.getController('quantity').text}\nDate of Prescribe: ${data.dateOfPrescribe!.toLocal().toString().split(' ')[0]}\nPrescribe By: ${MedicalData.getController('prescribeBy').text}', ['prescriptionMedicationName', 'prescriptionDosage', 'quantity', 'prescribeBy'], [data.dateOfPrescribe])),
+        ...data.prescriptionsList.asMap().entries.map((e) => _listItem(e.value, e.key, data.prescriptionsList)),
+      ]), LucideIcons.pill),
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Padding(
-          padding: EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Icon(LucideIcons.file_plus, color: AppColors.primary),
-              Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("Medical Information", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.primary))),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) { if (!didPop) Navigator.pop(context); },
+      child: Scaffold(
+        appBar: customAppBar("Medical Information", LucideIcons.file_plus, context),
+        backgroundColor: Colors.grey.shade50,
+        body: SingleChildScrollView(child: Column(children: [
+          SizedBox(height: 20),
+          Text("Medical Information", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text("Complete Patient Medical Profile", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+          SizedBox(height: 8),
+          Text("Page ${currentPage + 1} of 2", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+          SizedBox(height: 20),
+          
+          // Display content based on current page
+          currentPage == 0 ? _buildPart1() : _buildPart2(),
+
+          SizedBox(height: 30),
+          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: currentPage == 0 
+            ? SizedBox(
+                width: 200,
+                child: ElevatedButton.icon(
+                  onPressed: () => setState(() => currentPage = 1),
+                  icon: Text("Next", style: TextStyle(fontSize: 16)),
+                  label: Icon(LucideIcons.arrow_right, size: 18),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              )
+            : Row(children: [
+                Expanded(child: ElevatedButton.icon(
+                  onPressed: () => setState(() => currentPage = 0),
+                  icon: Icon(LucideIcons.arrow_left, size: 16),
+                  label: Text("Previous", style: TextStyle(fontSize: 14)),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade600, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: EdgeInsets.symmetric(vertical: 12)),
+                )),
+                SizedBox(width: 16),
+                Expanded(child: ElevatedButton(
+                  onPressed: () {
+                    // Save to records functionality
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: EdgeInsets.symmetric(vertical: 12)),
+                  child: Text("Save to Records", style: TextStyle(fontSize: 14)),
+                )),
+              ])
+          ),
+          SizedBox(height: 30),
+        ])),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), spreadRadius: 0, blurRadius: 6, offset: const Offset(0, -3))]),
+          child: BottomNavigationBar(
+            currentIndex: 1,
+            onTap: (index) => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: index)), (route) => false),
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.secondary,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(LucideIcons.house), label: "Dashboard"),
+              BottomNavigationBarItem(icon: Icon(LucideIcons.camera), label: 'Scan ID'),
+              BottomNavigationBarItem(icon: Icon(LucideIcons.search), label: "Search"),
+              BottomNavigationBarItem(icon: Icon(LucideIcons.bot), label: "Assistant"),
             ],
           ),
-        ),
-        actions: [Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Icon(LucideIcons.circle_user, color: AppColors.primary, size: 30))],
-        backgroundColor: Colors.white,
-        elevation: 2,
-        shadowColor: Colors.grey,
-      ),
-      backgroundColor: Colors.grey.shade50,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(height: 20),
-            Text("Medical Information", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text("Complete Patient Medical Profile", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-            SizedBox(height: 30),
-            
-            // Personal Information
-            buildCard("Personal Information", "", Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: ['Full Name', 'ID Number', 'Birth Date'].map((label) => Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade700)),
-                    Text(widget.patientData[label] ?? '', style: TextStyle(fontSize: 14)),
-                  ],
-                ),
-              )).toList(),
-            )),
-
-            // Medical History
-            buildCard("Medical History", "Add Patient medical condition and history", Column(
-              children: [
-                buildInput("Condition", 'condition'),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: buildDatePicker("dd/mm/yyyy", conditionDate, (date) => setState(() => conditionDate = date))),
-                    SizedBox(width: 12),
-                    Expanded(child: buildDropdown()),
-                  ],
-                ),
-                SizedBox(height: 16),
-                buildButton("Add", () {
-                  if (controllers['condition']!.text.isNotEmpty && conditionDate != null && selectedStatus != 'Select Status') {
-                    addData(medicalHistory, 'Condition: ${controllers['condition']!.text}\nDate: ${conditionDate!.toLocal().toString().split(' ')[0]}\nStatus: $selectedStatus', ['condition'], resetDate: true, resetStatus: true);
-                  }
-                }),
-                ...medicalHistory.asMap().entries.map((e) => buildSavedItem(medicalHistory, e.key)),
-              ],
-            )),
-
-            // Vaccinations
-            buildCard("Vaccinations", "Track Vaccination History", Column(
-              children: [
-                buildInput("Vaccine Name", 'vaccine'),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("First Dose", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                        SizedBox(height: 4),
-                        buildDatePicker("dd/mm/yyyy", firstDoseDate, (date) => setState(() => firstDoseDate = date)),
-                      ],
-                    )),
-                    SizedBox(width: 12),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Second Dose", style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                        SizedBox(height: 4),
-                        buildDatePicker("dd/mm/yyyy", secondDoseDate, (date) => setState(() => secondDoseDate = date)),
-                      ],
-                    )),
-                  ],
-                ),
-                SizedBox(height: 16),
-                buildButton("Add", () {
-                  if (controllers['vaccine']!.text.isNotEmpty && firstDoseDate != null) {
-                    addData(vaccinations, 'Vaccine: ${controllers['vaccine']!.text}\nFirst Dose: ${firstDoseDate!.toLocal().toString().split(' ')[0]}${secondDoseDate != null ? '\nSecond Dose: ${secondDoseDate!.toLocal().toString().split(' ')[0]}' : ''}', ['vaccine'], resetDate: true);
-                  }
-                }),
-                ...vaccinations.asMap().entries.map((e) => buildSavedItem(vaccinations, e.key)),
-              ],
-            )),
-
-            // Current Medication
-            buildCard("Current Medication", "List of current medication and prescription", Column(
-              children: [
-                ...['Medication Name', 'Dosage', 'Frequency', 'Prescribed by'].asMap().entries.map((entry) => Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: buildInput(entry.value, ['medication', 'dosage', 'frequency', 'prescribe'][entry.key]),
-                )),
-                SizedBox(height: 4),
-                buildButton("Add", () {
-                  if (controllers['medication']!.text.isNotEmpty && 
-                      controllers['dosage']!.text.isNotEmpty && 
-                      controllers['frequency']!.text.isNotEmpty && 
-                      controllers['prescribe']!.text.isNotEmpty) {
-                    addData(medications, 'Medication: ${controllers['medication']!.text}\nDosage: ${controllers['dosage']!.text}\nFrequency: ${controllers['frequency']!.text}\nPrescribed by: ${controllers['prescribe']!.text}', ['medication', 'dosage', 'frequency', 'prescribe']);
-                  }
-                }),
-                ...medications.asMap().entries.map((e) => buildSavedItem(medications, e.key)),
-              ],
-            )),
-
-            // Lab Result
-            buildCard("Lab Result", "Laboratory Lab result/card reports", Column(
-              children: [
-                buildInput("Test Name", 'test'),
-                SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: buildDatePicker("dd/mm/yyyy", labDate, (date) => setState(() => labDate = date))),
-                    SizedBox(width: 12),
-                    Expanded(child: buildInput("Frequency", 'labFrequency')),
-                  ],
-                ),
-                SizedBox(height: 16),
-                buildButton("Add", () {
-                  if (controllers['test']!.text.isNotEmpty && labDate != null) {
-                    addData(labResults, 'Test: ${controllers['test']!.text}\nDate: ${labDate!.toLocal().toString().split(' ')[0]}\nFrequency: ${controllers['labFrequency']!.text}', ['test', 'labFrequency'], resetDate: true);
-                  }
-                }),
-                ...labResults.asMap().entries.map((e) => buildSavedItem(labResults, e.key)),
-              ],
-            )),
-
-            // Remarks & Notes
-            buildCard("Remarks & Notes", "Additional medical notes and observations", Column(
-              children: [buildInput("Enter any additional medical notes, allergies, special conditions or remarks...", 'remarks', maxLines: 6)],
-            )),
-
-            SizedBox(height: 30),
-            // Save Button
-            Container(
-              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Medical Information Saved Successfully!"))),
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, padding: EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-                      child: Text("Save Medical Information", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text("Medical Record will be securely saved to patient's records", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                ],
-              ),
-            ),
-
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        // ignore: deprecated_member_use
-        decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), spreadRadius: 0, blurRadius: 6, offset: const Offset(0, -3))]),
-        child: BottomNavigationBar(
-          currentIndex: 1,
-          onTap: (index) {
-            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: index)), (route) => false);
-          },
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.secondary,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(LucideIcons.house), label: "Dashboard"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.camera), label: 'Scan ID'),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.search), label: "Search"),
-            BottomNavigationBarItem(icon: Icon(LucideIcons.bot), label: "Assistant"),
-          ],
         ),
       ),
     );

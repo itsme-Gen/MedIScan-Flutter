@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:medi_scan_mobile/colors.dart';
 import 'package:medi_scan_mobile/screens/Medical_Information.dart';
+import 'package:medi_scan_mobile/screens/Verification_Result.dart';
 import 'dart:io';
 import 'package:medi_scan_mobile/widget/bottomNav.dart';
 
@@ -107,6 +108,40 @@ class _OrcResultState extends State<OrcResult> {
     };
   }
 
+  void _navigateToVerification() {
+    // Validate required fields
+    final idNumber = extractedData["ID Number"]?.trim();
+    
+    if (idNumber == null || idNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ID Number is required to search records'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Navigate to Verification Result screen (API call happens there)
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VerificationResult(patientData: extractedData),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   Widget buildCard(Widget child) => Container(
         margin: EdgeInsets.all(16),
         padding: EdgeInsets.all(16),
@@ -173,9 +208,7 @@ class _OrcResultState extends State<OrcResult> {
     );
   }
 
-  // 👇 New: Gender dropdown selector
   Widget buildGenderSelector(String label, String value, IconData icon) {
-    // Check if the value matches one of the dropdown options
     String? normalizedValue;
     if (value.isNotEmpty) {
       String lowerValue = value.toLowerCase();
@@ -183,7 +216,7 @@ class _OrcResultState extends State<OrcResult> {
         normalizedValue = "Male";
       } else if (lowerValue.contains('female')) {
         normalizedValue = "Female";
-      } else if (["Male", "Female",].contains(value)) {
+      } else if (["Male", "Female"].contains(value)) {
         normalizedValue = value;
       }
     }
@@ -214,7 +247,7 @@ class _OrcResultState extends State<OrcResult> {
           ),
           hint: Text(hintText, style: TextStyle(fontSize: 14, color: Colors.black87)),
           style: TextStyle(fontSize: 14, color: Colors.black),
-          items: ["Male", "Female",].map((String gender) {
+          items: ["Male", "Female"].map((String gender) {
             return DropdownMenuItem<String>(
               value: gender,
               child: Text(gender),
@@ -366,13 +399,7 @@ class _OrcResultState extends State<OrcResult> {
                       onPressed: () {
                         setState(() {
                           if (isEditing) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Changes saved successfully'),
-                                backgroundColor: Colors.green,
-                                duration: Duration(seconds: 2),
-                              ),
-                            );
+                            _showSuccessSnackBar('Changes saved successfully');
                           }
                           isEditing = !isEditing;
                         });
@@ -418,9 +445,8 @@ class _OrcResultState extends State<OrcResult> {
                     );
                   }, LucideIcons.refresh_ccw),
                   SizedBox(height: 12),
-                  buildButton("Search Records", AppColors.primary, () {
-                    // Add search record functionality
-                  }, LucideIcons.search),
+                  buildButton("Search Records", AppColors.primary,
+                      _navigateToVerification, LucideIcons.search),
                   SizedBox(height: 12),
                   buildButton("Next", AppColors.secondary, () {
                     Navigator.push(
