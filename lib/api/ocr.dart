@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class PhilIdApi {
-  // Replace with your Flask server IP (not localhost if using emulator)
-  static const String baseUrl = "http://10.68.118.26:5000"; // your Flask server IP
+  // Replace with your Flask server IP
+  static const String baseUrl = "http://172.19.162.240:5001"; 
 
   /// Uploads the PhilID image to Flask for OCR extraction
   static Future<Map<String, dynamic>> extractInfo(File imageFile) async {

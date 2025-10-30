@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 
 class AuthService {
-  static const String baseUrl = 'http://10.68.118.26:8000';
+  static const String baseUrl = 'http://172.19.162.240:8001';
   
   /// Login user with email and password
   Future<Map<String, dynamic>> login(String email, String password) async {

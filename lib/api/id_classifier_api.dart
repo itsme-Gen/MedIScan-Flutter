@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 
 class IdClassifierApi {
   //Replace this with your local IP or deployed server IP
-  static const String _baseUrl = "http://10.68.118.26:5050"; 
+  static const String _baseUrl = "http://172.19.162.240:5050"; 
 
   /// Sends an image to the Flask /classify endpoint
   static Future<Map<String, dynamic>> classifyId(File imageFile) async {

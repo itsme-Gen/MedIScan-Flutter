@@ -3,9 +3,9 @@ import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:medi_scan_mobile/colors.dart';
 import 'package:medi_scan_mobile/widget/appBar.dart';
 import 'package:medi_scan_mobile/screens/ORC_Result.dart';
-import 'package:medi_scan_mobile/api/id_classifier_api.dart'; 
+import 'package:medi_scan_mobile/api/id_classifier_api.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:medi_scan_mobile/api/philid_api.dart';
+import 'package:medi_scan_mobile/api/ocr.dart';
 import 'dart:io';
 
 class Scanid extends StatefulWidget {
@@ -34,64 +34,70 @@ class _ScanidState extends State<Scanid> {
     }
   }
 
-  // ✅ Updated function with Flask connection
- Future<void> processImage() async {
-  if (imageFile == null) return;
+  Future<void> processImage() async {
+    if (imageFile == null) return;
 
-  setState(() => isProcessing = true);
+    setState(() => isProcessing = true);
 
-  // Step 1: Run classifier first (check if it's an ID)
-  final result = await IdClassifierApi.classifyId(imageFile!);
-  setState(() => isProcessing = false);
+    //Run classifier
+    final result = await IdClassifierApi.classifyId(imageFile!);
+    setState(() => isProcessing = false);
 
-  if (result.containsKey("error")) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: ${result['error']}")),
-    );
-    return;
-  }
+    if (result.containsKey("error")) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${result['error']}")),
+      );
+      return;
+    }
 
-  final prediction = result['prediction'];
-  final confidence = result['confidence'];
+    final prediction = result['prediction'];
+    final confidence = result['confidence'];
 
-  // Step 2: If not ID, stop here
-  if (prediction.toString().toLowerCase() != "id") {
+    //If not ID, stop here
+    if (prediction.toString().toLowerCase() != "id") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("The image is not an ID. Please upload a valid ID card."),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return; // stop execution
+    }
+
+    //Added Snackbar here when ID is detected
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("The image is not an ID. Please upload a valid ID card."),
-        backgroundColor: Colors.redAccent,
+        content: Text("ID detected, extracting info please wait..."),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 3),
       ),
     );
-    return; // stop execution
-  }
 
-  // ✅ Step 3: If it *is* an ID, call Flask OCR extraction
-  setState(() => isProcessing = true);
-  final ocrResult = await PhilIdApi.extractInfo(imageFile!);
-  setState(() => isProcessing = false);
+    setState(() => isProcessing = true);
+    final ocrResult = await PhilIdApi.extractInfo(imageFile!);
+    setState(() => isProcessing = false);
 
-  if (ocrResult['success'] == true) {
-    // Navigate to results page and show extracted ID info
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OrcResultWithNav(
-          imageFile: imageFile,
-          result: ocrResult, 
-          confidence: confidence,
+    if (ocrResult['success'] == true) {
+      // Navigate to results page and show extracted ID info
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrcResultWithNav(
+            imageFile: imageFile,
+            result: ocrResult,
+            confidence: confidence,
+          ),
         ),
-      ),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("OCR Failed: ${ocrResult['error'] ?? 'Unknown error'}"),
-        backgroundColor: Colors.redAccent,
-      ),
-    );
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("OCR Failed: ${ocrResult['error'] ?? 'Unknown error'}"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
-}
-
 
   Widget buildCard(Widget child) => Container(
         margin: EdgeInsets.all(16),
@@ -128,7 +134,7 @@ class _ScanidState extends State<Scanid> {
     bool hasImage = imageFile != null;
 
     return Scaffold(
-      appBar: reusableAppBar("Scan ID", LucideIcons.camera,context),
+      appBar: reusableAppBar("Scan ID", LucideIcons.camera, context),
       backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
         child: Column(
@@ -140,8 +146,7 @@ class _ScanidState extends State<Scanid> {
             Text(
                 "Capture or upload a patient identification\ndocument for verification",
                 textAlign: TextAlign.center,
-                style:
-                    TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
 
             // Capture Photo Section
             buildCard(Column(
@@ -153,8 +158,8 @@ class _ScanidState extends State<Scanid> {
                     decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(12)),
-                    child: Icon(LucideIcons.camera,
-                        color: Colors.white, size: 24),
+                    child:
+                        Icon(LucideIcons.camera, color: Colors.white, size: 24),
                   ),
                   SizedBox(width: 12),
                   Column(
@@ -238,8 +243,8 @@ class _ScanidState extends State<Scanid> {
                               ? Container(
                                   padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.green, width: 2),
+                                    border: Border.all(
+                                        color: Colors.green, width: 2),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(LucideIcons.zap,
@@ -268,8 +273,8 @@ class _ScanidState extends State<Scanid> {
                 ),
                 if (hasImage && !isProcessing) ...[
                   SizedBox(height: 16),
-                  buildButton(
-                      "Process Image", Colors.green, processImage, LucideIcons.zap),
+                  buildButton("Process Image", Colors.green, processImage,
+                      LucideIcons.zap),
                 ],
               ],
             )),
