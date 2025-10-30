@@ -245,6 +245,15 @@ class _MedicalInformationState extends State<MedicalInformation> {
     data.diagnoseDate = data.revolutionDate = data.testDate = data.dateGiven = data.nextDue = data.dateOfPrescribe = null;
   }
 
+  String? _extractValue(List<String> lines, String key) {
+    try {
+      final line = lines.firstWhere((l) => l.contains(key), orElse: () => '');
+      return line.split(':').length > 1 ? line.split(':')[1].trim() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   Future<void> _saveToRecords() async {
     if (isLoading) return;
     
@@ -375,15 +384,6 @@ class _MedicalInformationState extends State<MedicalInformation> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
       );
-    }
-  }
-
-  String? _extractValue(List<String> lines, String key) {
-    try {
-      final line = lines.firstWhere((l) => l.contains(key), orElse: () => '');
-      return line.split(':').length > 1 ? line.split(':')[1].trim() : null;
-    } catch (e) {
-      return null;
     }
   }
 
@@ -536,57 +536,100 @@ class _MedicalInformationState extends State<MedicalInformation> {
       child: Scaffold(
         appBar: customAppBar("Medical Information", LucideIcons.file_plus, context),
         backgroundColor: Colors.grey.shade50,
-        body: SingleChildScrollView(child: Column(children: [
-          SizedBox(height: 20),
-          Text("Medical Information", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text("Complete Patient Medical Profile", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
-          SizedBox(height: 8),
-          Text("Page ${currentPage + 1} of 2", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
-          SizedBox(height: 20),
-          
-          // Display content based on current page
-          currentPage == 0 ? _buildPart1() : _buildPart2(),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(height: 20),
+              Text("Medical Information", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text("Complete Patient Medical Profile", style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+              SizedBox(height: 8),
+              Text("Page ${currentPage + 1} of 2", style: TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+              SizedBox(height: 20),
+              
+              // Display content based on current page
+              currentPage == 0 ? _buildPart1() : _buildPart2(),
 
-          SizedBox(height: 30),
-          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: currentPage == 0 
-            ? SizedBox(
-                width: 200,
-                child: ElevatedButton.icon(
-                  onPressed: () => setState(() => currentPage = 1),
-                  icon: Text("Next", style: TextStyle(fontSize: 16)),
-                  label: Icon(LucideIcons.arrow_right, size: 18),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              )
-            : Row(children: [
-                Expanded(child: ElevatedButton.icon(
-                  onPressed: () => setState(() => currentPage = 0),
-                  icon: Icon(LucideIcons.arrow_left, size: 16),
-                  label: Text("Previous", style: TextStyle(fontSize: 14)),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade600, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: EdgeInsets.symmetric(vertical: 12)),
-                )),
-                SizedBox(width: 16),
-                Expanded(child: ElevatedButton(
-                  onPressed: isLoading ? null : _saveToRecords,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: EdgeInsets.symmetric(vertical: 12)),
-                  child: isLoading 
-                    ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-                    : Text("Save to Records", style: TextStyle(fontSize: 14)),
-                )),
-              ])
+              SizedBox(height: 30),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: currentPage == 0 
+                  ? SizedBox(
+                      width: 200,
+                      child: ElevatedButton.icon(
+                        onPressed: () => setState(() => currentPage = 1),
+                        icon: Text("Next", style: TextStyle(fontSize: 16)),
+                        label: Icon(LucideIcons.arrow_right, size: 18),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    )
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => setState(() => currentPage = 0),
+                            icon: Icon(LucideIcons.arrow_left, size: 16),
+                            label: Text("Previous", style: TextStyle(fontSize: 14)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.grey.shade600,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isLoading ? null : _saveToRecords,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: isLoading 
+                              ? SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Text("Save to Records", style: TextStyle(fontSize: 14)),
+                          ),
+                        ),
+                      ],
+                    )
+              ),
+              SizedBox(height: 30),
+            ],
           ),
-          SizedBox(height: 30),
-        ])),
+        ),
         bottomNavigationBar: Container(
-          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), spreadRadius: 0, blurRadius: 6, offset: const Offset(0, -3))]),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 6,
+                offset: const Offset(0, -3),
+              )
+            ],
+          ),
           child: BottomNavigationBar(
             currentIndex: 1,
-            onTap: (index) => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: index)), (route) => false),
+            onTap: (index) => Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: index)),
+              (route) => false,
+            ),
             type: BottomNavigationBarType.fixed,
             selectedItemColor: AppColors.primary,
             unselectedItemColor: AppColors.secondary,
