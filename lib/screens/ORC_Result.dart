@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lucide/flutter_lucide.dart';
 import 'package:medi_scan_mobile/colors.dart';
-import 'package:medi_scan_mobile/screens/Medical_Information.dart';
+import 'package:medi_scan_mobile/screens/Verification_Result.dart';
+import 'package:medi_scan_mobile/widget/appBar.dart';
 import 'dart:io';
-
 import 'package:medi_scan_mobile/widget/bottomNav.dart';
 
 class OrcResultWithNav extends StatelessWidget {
@@ -16,7 +16,6 @@ class OrcResultWithNav extends StatelessWidget {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (!didPop) {
-          // Navigate back to Scan ID page when back button is pressed
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: 1)),
@@ -66,18 +65,34 @@ class OrcResult extends StatefulWidget {
 }
 
 class _OrcResultState extends State<OrcResult> {
-  final Map<String, String> extractedData = {
-    "Full Name": "MARIA SANTOS DELA CRUZ",
-    "ID Number": "ID-2024-001234", 
-    "Address": "123 Rizal St., Makati City",
-    "Emergency Contact": "JUAN DELA CRUZ (09171234567)",
+  bool isEditing = false;
+  late Map<String, TextEditingController> controllers;
+  
+  final Map<String, String> _defaultData = {
+    "First Name": "MARIA",
+    "Middle Name": "SANTOS", 
+    "Last Name": "DELA CRUZ",
+    "ID Number": "1234-5678-9101-1213",
     "Birth Date": "1985-03-15",
-    "Blood Type": "O+"
+    "Gender": "Female"
   };
 
-  Widget buildCard(Widget child) => Container(
-    margin: EdgeInsets.all(16),
-    padding: EdgeInsets.all(16),
+  @override
+  void initState() {
+    super.initState();
+    _initControllers();
+  }
+
+  void _initControllers() {
+    controllers = {};
+    _defaultData.forEach((key, value) {
+      controllers[key] = TextEditingController(text: value);
+    });
+  }
+
+  Widget _card(Widget child) => Container(
+    margin: EdgeInsets.all(8),
+    padding: EdgeInsets.all(8),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
@@ -86,87 +101,90 @@ class _OrcResultState extends State<OrcResult> {
     child: child,
   );
 
-  Widget buildButton(String text, Color color, VoidCallback onPressed, IconData icon) => SizedBox(
-    width: double.infinity,
-    child: ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(text, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: EdgeInsets.symmetric(vertical: 12),
-      ),
+  Widget _editBtn() => OutlinedButton.icon(
+    onPressed: () {
+      setState(() {
+        isEditing = !isEditing; 
+      });
+    },
+    icon: Icon(
+      isEditing ? LucideIcons.file_pen : LucideIcons.file_pen, 
+      size: 12, 
+      color: Colors.black
+    ),
+    label: Text(
+      isEditing ? "Save" : "Edit", 
+      style: TextStyle(fontSize: 10, color: Colors.black)
+    ),
+    style: OutlinedButton.styleFrom(
+      backgroundColor: Colors.white,
+      side: BorderSide(color: Colors.black),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     ),
   );
 
-  Widget buildTextField(String label, String value, IconData icon) => Column(
+  Widget _field(String label, String key, IconData icon) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Row(children: [
         Icon(icon, size: 16, color: Colors.grey.shade600),
-        SizedBox(width: 8),
-        Text(label, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-        if (["Full Name", "ID Number", "Birth Date"].contains(label)) Text(" *", style: TextStyle(color: Colors.red)),
+        SizedBox(width: 6),
+        Text(label, style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
       ]),
-      SizedBox(height: 8),
+      SizedBox(height: 4),
       TextField(
-        controller: TextEditingController(text: value),
-        style: TextStyle(fontSize: 14),
+        controller: controllers[key],
+        readOnly: !isEditing,
+        style: TextStyle(
+          fontSize: 10,
+          color: isEditing ? Colors.black : Colors.grey.shade600,
+        ),
         decoration: InputDecoration(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(
+              color: isEditing ? Colors.grey.shade300 : Colors.grey.shade200,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide(
+              color: isEditing ? Colors.grey.shade300 : Colors.grey.shade200,
+            ),
+          ),
+          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: isEditing ? Colors.white : Colors.grey.shade50,
         ),
       ),
-      SizedBox(height: 16),
+      SizedBox(height: 8),
     ],
   );
 
-  IconData getIconForField(String label) {
-    switch (label) {
-      case "Full Name": return LucideIcons.user;
-      case "ID Number": return LucideIcons.hash;
-      case "Address": return LucideIcons.map_pin;
-      case "Emergency Contact": return LucideIcons.phone;
-      case "Birth Date": return LucideIcons.calendar;
-      case "Blood Type": return LucideIcons.droplet;
-      default: return LucideIcons.user;
-    }
+  IconData _getIcon(String label) {
+    const icons = {
+      "First Name": LucideIcons.user,
+      "Middle Name": LucideIcons.user,
+      "Last Name": LucideIcons.user,
+      "ID Number": LucideIcons.id_card,
+      "Birth Date": LucideIcons.calendar,
+      "Gender": LucideIcons.venus_and_mars,
+    };
+    return icons[label] ?? LucideIcons.user;
+  }
+
+  Map<String, String> _getCurrentData() {
+    Map<String, String> currentData = {};
+    controllers.forEach((key, controller) {
+      currentData[key] = controller.text;
+    });
+    return currentData;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Padding(
-          padding: EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Icon(LucideIcons.file_text, color: AppColors.primary),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  "ORC Result",
-                  style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Icon(LucideIcons.circle_user, color: AppColors.primary, size: 30),
-          )
-        ],
-        backgroundColor: Colors.white,
-        elevation: 2,
-        shadowColor: Colors.grey,
-      ),
+      appBar: customAppBar("ORC Result", LucideIcons.file_text, context),
       backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
         child: Column(
@@ -180,8 +198,7 @@ class _OrcResultState extends State<OrcResult> {
                    textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
             ),
             
-            // Original Image & ORC Confidence
-            buildCard(Column(
+            _card(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Original Image", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -211,43 +228,71 @@ class _OrcResultState extends State<OrcResult> {
               ],
             )),
             
-            // Extracted Information
-            buildCard(Column(
+            _card(Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Extracted Information", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                SizedBox(height: 8),
-                Text("Verify the accuracy of the extracted data", style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                SizedBox(height: 20),
-                ...extractedData.entries.map((e) => buildTextField(e.key, e.value, getIconForField(e.key))),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Extracted Information", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text("Verify the accuracy of the extracted data", style: TextStyle(color: Colors.grey.shade600, fontSize: 10)),
+                      ],
+                    ),
+                    _editBtn(),
+                  ],
+                ),
+                SizedBox(height: 12),
+                ..._getCurrentData().keys.map((key) => _field(key, key, _getIcon(key))),
               ],
             )),
             
-            // Action Buttons
             Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
+              padding: EdgeInsets.all(8),
+              child: Row(
                 children: [
-                  buildButton("Scan Again", Colors.grey.shade600, () {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: 1)),
-                      (route) => false,
-                    );
-                  }, LucideIcons.refresh_ccw),
-                  SizedBox(height: 12),
-                  buildButton("Search Records", AppColors.primary, () {
-                    // Search Records functionality goes here
-                  }, LucideIcons.search),
-                  SizedBox(height: 12),
-                  buildButton("Next", AppColors.secondary, () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MedicalInformation(patientData: extractedData),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (context) => Bottomnav(initialIndex: 1)),
+                          (route) => false,
+                        );
+                      },
+                      icon: Icon(LucideIcons.refresh_ccw, size: 14),
+                      label: Text("Scan Again", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade600,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: EdgeInsets.symmetric(vertical: 8),
                       ),
-                    );
-                  }, LucideIcons.arrow_right),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => VerificationResult(patientData: _getCurrentData()),
+                          ),
+                        );
+                      },
+                      icon: Icon(LucideIcons.search, size: 14),
+                      label: Text("Search Records", style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -75,7 +75,7 @@ class _ScanidState extends State<Scanid> {
     bool hasImage = imageFile != null;
     
     return Scaffold(
-      appBar: reusableAppBar("Scan ID", LucideIcons.camera),
+      appBar: reusableAppBar("Scan ID", LucideIcons.camera, context),
       backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
         child: Column(

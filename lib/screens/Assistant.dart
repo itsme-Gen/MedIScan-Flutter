@@ -13,7 +13,7 @@ class _AssistantState extends State<Assistant> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: reusableAppBar("Assistant",LucideIcons.bot),
+      appBar: reusableAppBar("Assistant",LucideIcons.bot, context),
 
       body: Center(
         child: Column(

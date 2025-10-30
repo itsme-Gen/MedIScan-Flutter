@@ -13,7 +13,7 @@ class _SearchState extends State<Search> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: reusableAppBar("Search",LucideIcons.search),
+      appBar: reusableAppBar("Search",LucideIcons.search, context),
 
       body: Center(
           child:  Text('Search UI goes here for Renan , UGH! yeah HAHAHAHAH'),
